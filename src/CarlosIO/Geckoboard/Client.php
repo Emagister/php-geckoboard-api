@@ -2,8 +2,9 @@
 
 namespace CarlosIO\Geckoboard;
 
-use Guzzle\Http\Client as Guzzle;
+use GuzzleHttp\Client as Guzzle;
 use CarlosIO\Geckoboard\Widgets\Widget;
+use GuzzleHttp\RequestOptions;
 
 /**
  * Class Client.
@@ -13,7 +14,7 @@ class Client
     const URI = 'https://push.geckoboard.com';
 
     /**
-     * @var \Guzzle\Http\Client
+     * @var \GuzzleHttp\Client
      */
     protected $client;
 
@@ -24,31 +25,20 @@ class Client
 
     /**
      * Construct a new Geckoboard Client.
+     * @param array $config Client configuration settings.
      */
-    public function __construct()
+    public function __construct(array $config = [])
     {
         $this->api = '';
-        $this->client = new Guzzle(self::URI);
+        $this->client = new Guzzle($config);
     }
 
     /**
-     * @param array|\Guzzle\Common\Collection $config
+     * @param string|null $key
      *
-     * @return Client $this
+     * @return array|mixed
      */
-    public function setGuzzleConfig($config)
-    {
-        $this->client->setConfig($config);
-
-        return $this;
-    }
-
-    /**
-     * @param string|bool $key
-     *
-     * @return \Guzzle\Common\Collection|mixed
-     */
-    public function getGuzzleConfig($key = false)
+    public function getGuzzleConfig($key = null)
     {
         return $this->client->getConfig($key);
     }
@@ -123,14 +113,14 @@ class Client
      */
     private function pushWidget(Widget $widget)
     {
-        $this->client->post(
-            '/v1/send/'.$widget->getId(),
-            null,
-            json_encode(
-                array(
-                    'api_key' => $this->getApiKey(),
-                    'data' => $widget->getData(),
-                )
-            ))->send();
+        $url = sprintf('%s/v1/send/%s', self::URI, $widget->getId());
+        $body = json_encode(
+            [
+                'api_key' => $this->getApiKey(),
+                'data' => $widget->getData(),
+            ]
+        );
+
+        $this->client->request('POST', $url, [RequestOptions::BODY => $body]);
     }
 }
